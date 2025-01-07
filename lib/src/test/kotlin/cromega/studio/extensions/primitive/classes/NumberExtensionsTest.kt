@@ -5,7 +5,7 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class IntExtensionsTest
+class NumberExtensionsTest
 {
     private val zero: Byte = 0
     private val positive: Byte = 1
