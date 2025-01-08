@@ -1,0 +1,178 @@
+package cromega.studio.extensions.data.structures
+
+import cromega.studio.extensions.primitive.classes.isNotNull
+
+/**
+ * Check if _given element is the **last in current [Iterable]**_.
+ *
+ * @param T type of elements inside [Iterable]
+ *
+ * @param toCheck [T] Element to be checked, and determine if is the last element on [Iterable]
+ *
+ * @return **_true_** if compared element **is the last on [Iterable]**, **_false_** otherwise
+ */
+infix fun <T> Iterable<T>.isTheLast(toCheck: T): Boolean = this.last() == toCheck
+
+/**
+ * Check if _given element is not the **last in current [Iterable]**_.
+ *
+ * @param T type of elements inside [Iterable]
+ *
+ * @param toCheck [T] Element to be checked, and determine if is not the last element on [Iterable]
+ *
+ * @return **_true_** if compared element **is not the last on [Iterable]**, **_false_** otherwise
+ */
+infix fun <T> Iterable<T>.isNotTheLast(toCheck: T): Boolean = !(this isTheLast toCheck)
+
+/**
+ * Check if _given element **is the first in current [Iterable]**_.
+ *
+ * @param T type of elements inside [Iterable]
+ *
+ * @param toCheck [T] Element to be checked, and determine **if is the first element** on [Iterable]
+ *
+ * @return **_true_** if compared element **is the first on [Iterable]**, **_false_** otherwise
+ */
+infix fun <T> Iterable<T>.isTheFirst(toCheck: T): Boolean = this.first() == toCheck
+
+/**
+ * Check if _given element **is not the first in current [Iterable]**_.
+ *
+ * @param T type of elements inside [Iterable]
+ *
+ * @param toCheck [T] Element to be checked, and determine if **is not the first element** on [Iterable]
+ *
+ * @return **_true_** if compared element **is not the first on [Iterable]**, **_false_** otherwise
+ */
+infix fun <T> Iterable<T>.isNotTheFirst(toCheck: T): Boolean = !(this isTheFirst toCheck)
+
+/**
+ * Validate if current [Iterable] **is neither _null_ nor empty**.
+ *
+ * Allows to validate if current [Iterable] object **is neither _null_ nor empty**.
+ *
+ * @param T type of elements inside [Iterable]
+ *
+ * @return **_true_** if current [Iterable] **is neither _null_ nor its size is _0_**, **_false_** otherwise
+ */
+fun <T> Iterable<T>?.isNeitherNullOrEmpty(): Boolean = (this.isNotNull() && (this?.any() ?: false))
+
+/**
+ * Convert current [Iterable] to a [String].
+ *
+ * Read the current [Iterable] and write it on a **new** [String], with other configurable parameters.
+ *
+ * @param T type of elements inside [Iterable]
+ *
+ * @param startChar [CharSequence] to be written at the start of the [String]
+ *
+ * @param endChar [CharSequence] to be written at the end of the [String]
+ *
+ * @param separator [CharSequence] to be written between each element added to resultant [String]
+ *
+ * @param elementToString **_lambda function_** to be executed when trying the [T] element conversion to [String].
+ * If **_lambda function_ is not declared**, [toString] standard function will be called
+ *
+ * @return [String] with all the elements of [Iterable] written on it, along with the other parameters passed
+ */
+fun <T> Iterable<T>.toText(
+    startChar: CharSequence = "(",
+    endChar: CharSequence = ")",
+    separator: CharSequence = ",",
+    elementToString: ((T) -> String) = { element -> element.toString() }
+): String
+{
+    val string: StringBuilder = StringBuilder()
+
+    string.append(startChar)
+
+    this.forEach { element ->
+        val toAppend: String = elementToString(element)
+
+        string.append(toAppend)
+
+        if (this isNotTheLast element) string.append(separator)
+    }
+
+    string.append(endChar)
+
+    return string.toString()
+}
+
+/**
+ * [Iterable.find] variant with fallback.
+ *
+ * [Iterable.find] function variant, allowing to generate a default value if no element match the [predicate].
+ *
+ * @param T type of elements inside [Iterable]
+ *
+ * @param predicate **_lambda function_** used to validate if any [T] element match the established condition
+ *
+ * @param generateDefault **_lambda function_** used to generate default [T] object if no element match the [predicate]
+ *
+ * @param dataForDefault [Any] object containing data possibly needed by [generateDefault] function
+ *
+ * @return [T] object found inside the current [Iterable], or default [T] element generated with [generateDefault]
+ */
+inline fun <T> Iterable<T>.findOrDefault(
+    predicate: (T) -> Boolean,
+    generateDefault: (Any) -> T,
+    dataForDefault: Any = Any()
+): T =
+    firstOrNull(predicate) ?: generateDefault(dataForDefault)
+
+/**
+ * Convert current [Iterable] to [Map].
+ *
+ * Convert current [Iterable] to a [Map], using [E] elements as index for [Map], completing with default values [T].
+ *
+ * @param E type of elements inside [Iterable], and index type for [Map]
+ *
+ * @param T type of elements used for [Map.values]
+ *
+ * @param constructFunction **_lambda function_** used to generate default [T] values to fill [Map]<[E], [T]>
+ *
+ * @return [Map]<[E], [T]> generated by using the [Iterable] [E] elements as index,
+ * and filled with [T] generated values by [constructFunction]
+ */
+inline fun <E, T> Iterable<E>.generateSimpleMap(
+    constructFunction: () -> T
+): Map<E, T>
+{
+    val toReturn: MutableMap<E, T> = mutableMapOf()
+
+    this.forEach {
+        toReturn[it] = constructFunction()
+    }
+
+    return toReturn.toMap()
+}
+
+/**
+ * Convert current [Iterable] to [Map].
+ *
+ * Convert current [Iterable] to a [Map], using [E] elements as index for [Map],
+ * completing with the result of a **_lambda function_** ([constructFunction]) that takes [E] and return [T].
+ *
+ * @param E type of elements inside [Iterable], and index type for [Map]
+ *
+ * @param T type of elements used for [Map.values]
+ *
+ * @param constructFunction **_lambda function_** used to generate [T] values, using [E] elements as argument
+ *
+ * @return [Map]<[E], [T]> generated by using the [Iterable] [E] elements as index,
+ * and filled with [T] values (result of processing [E] by [constructFunction])
+ */
+inline fun <E, T> Iterable<E>.generateMap(
+    constructFunction: (E) -> T
+): Map<E, T>
+{
+    val toReturn: MutableMap<E, T> = mutableMapOf()
+
+    this.forEach {
+        toReturn[it] = constructFunction(it)
+    }
+
+    return toReturn.toMap()
+}
+
